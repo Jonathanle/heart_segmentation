@@ -27,7 +27,7 @@ filename_prefixes = {"JPCLN": 154, "JPCNN": 93}
 
 # Train_test split for data
 SHUFFLE_SEED = 42
-train_val_test_split = (0.01, 0.79, 0.2)
+train_val_test_split = (0.7, 0.1, 0.2)
 FLIP_PROBABILITY = 0
 
 # Normalization Parameters for transforming image data for the model to accept.

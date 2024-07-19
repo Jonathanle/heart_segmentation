@@ -38,6 +38,8 @@ Misconfiguration of the Loss Metric - why is cross entropy loss important?
 - how to unit test for these more "under the surface complex functions"
 - how to test the model itself + other strategies for bootstrapping model
 - setting dtypes for arrays + how important it is.
+- how to calculate mean_loss:.3f
+- how things calculate functions
 """
 
 
@@ -135,7 +137,7 @@ train_dataset, val_dataset, test_dataset= preprocess.retrieve_heart_dataset()
 # Cannot have a batch size of 1 due to internal errors of code compresing dimensions.
 train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=False, collate_fn=collate_fn)
 val_dataloader = DataLoader(val_dataset, batch_size = 1, shuffle=False, collate_fn=collate_fn)
-test_dataloader = DataLoader(train_dataset, batch_size =1, shuffle=False, collate_fn=collate_fn)
+test_dataloader = DataLoader(test_dataset, batch_size =1, shuffle=False, collate_fn=collate_fn)
 
 # Load Model
 config = Dinov2Config(image_size = 504, patch_size = 14, num_labels=2)
@@ -162,7 +164,7 @@ if os.path.isfile("./model.pth"):
 
 if train: 
     train_model(model, train_dataloader)
-    torch.save(model.state_dict(), "./model.pth")
+    torch.save(model.state_dict(), "./models/model.pth")
 
 # Eval (Learn Importances and tools that I cna use for later building + fine tuning) 
 # Gather tools and libraries + devise interleaving exercises on coding skills for creating evaluation
