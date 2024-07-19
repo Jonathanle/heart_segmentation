@@ -1,6 +1,8 @@
 import torch
 from transformers import Dinov2Model, Dinov2PreTrainedModel
 
+
+
 # Why is Semantic Segmenter Output Important? 
 from transformers.modeling_outputs import SemanticSegmenterOutput
 class LinearClassifier(torch.nn.Module):
@@ -16,6 +18,8 @@ class LinearClassifier(torch.nn.Module):
     def forward(self, embeddings):
         embeddings = embeddings.reshape(-1, self.height, self.width, self.in_channels)
         embeddings = embeddings.permute(0,3,1,2) # channel first
+
+
 
         return self.classifier(embeddings)
 
@@ -52,7 +56,7 @@ class Dinov2ForSemanticSegmentation(Dinov2PreTrainedModel):
       # as we don't want the model to learn to predict background
       # use cross entropy as the loss objective
 
-      loss_function = torch.nn.CrossEntropyLoss(ignore_index=0)
+      loss_function = torch.nn.CrossEntropyLoss(ignore_index=255)
 
       # This fucntion could be removing more than necessary?
       loss = loss_function(logits.squeeze(), labels.squeeze())

@@ -28,6 +28,7 @@ filename_prefixes = {"JPCLN": 154, "JPCNN": 93}
 # Train_test split for data
 SHUFFLE_SEED = 42
 train_val_test_split = (0.01, 0.79, 0.2)
+FLIP_PROBABILITY = 0
 
 # Normalization Parameters for transforming image data for the model to accept.
 ADE_MEAN = [0.485, 0.456, 0.406]
@@ -67,7 +68,7 @@ def create_dataset(image_paths, label_paths):
 train_transform = A.Compose([
 # don't using crop
 A.Resize(width=504, height=504),
-A.HorizontalFlip(p=0.5),
+A.HorizontalFlip(p=FLIP_PROBABILITY),
 A.Normalize(mean=ADE_MEAN, std=ADE_STD),
 ], is_check_shapes= True)
 
@@ -76,11 +77,13 @@ val_transform = A.Compose([
     A.Normalize(mean=ADE_MEAN, std=ADE_STD),
     ], is_check_shapes=True)
 
+# takes 2 numpy images and overlays the images over one another
+# np arrays must have the form of the (height, width, channel)
 def visualize_map(image, segmentation_map):
     segmentation_map = np.array(segmentation_map)
     color_seg = np.zeros((segmentation_map.shape[0], segmentation_map.shape[1], 3), dtype=np.uint8) # height, width, 3
 
-    id2color = { 0: 0, 1: 255}
+    id2color = { 0: (0, 255, 255), 1: (255, 255, 0)}
 
 
     transform = A.Compose([
@@ -104,6 +107,8 @@ def visualize_map(image, segmentation_map):
 
     resized_image = transform(image=image_np)['image']
 
+    #print(color_seg.shape) 
+    #print(segmentation_map[297: 330, 245:275])  # binary masks with shape and 
 
     for label, color in id2color.items():
 
@@ -114,7 +119,7 @@ def visualize_map(image, segmentation_map):
     color_seg = transform(image = color_seg)["image"]
     
     # Show image + mask
-    img = np.array(image) * 0 + color_seg * 1
+    img = np.array(image) * 0.2 + color_seg * 0.8
     img = img.astype(np.uint8)
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
