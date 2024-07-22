@@ -27,8 +27,10 @@ filename_prefixes = {"JPCLN": 154, "JPCNN": 93}
 
 # Train_test split for data
 SHUFFLE_SEED = 42
-train_val_test_split = (0.7, 0.1, 0.2)
+train_val_test_split = (0.8, 0.1, 0.1)
 FLIP_PROBABILITY = 0
+ROTATE_PROBABILITY = 0.5
+CROP_PROBABILITY = 0.7
 
 # Normalization Parameters for transforming image data for the model to accept.
 ADE_MEAN = [0.485, 0.456, 0.406]
@@ -69,19 +71,35 @@ train_transform = A.Compose([
 # don't using crop
 A.Resize(width=504, height=504),
 A.HorizontalFlip(p=FLIP_PROBABILITY),
+A.Rotate(limit=15, p=ROTATE_PROBABILITY), 
+A.RandomSizedBBoxSafeCrop(504, 504, erosion_rate=0.3, always_apply=False, p=CROP_PROBABILITY),  # rescale to 504?
 A.Normalize(mean=ADE_MEAN, std=ADE_STD),
-], is_check_shapes= True)
+], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels']), is_check_shapes= True)
 
 val_transform = A.Compose([
     A.Resize(width=504, height=504),
     A.Normalize(mean=ADE_MEAN, std=ADE_STD),
-    ], is_check_shapes=True)
+    ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels']), is_check_shapes=True)
+# Why does val_transform need this 
 
 # takes 2 numpy images and overlays the images over one another
 # np arrays must have the form of the (height, width, channel)
-def visualize_map(image, segmentation_map):
+
+
+def get_bounding_box(mask):
+    rows = np.any(mask, axis=1)
+    cols = np.any(mask, axis=0)
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    cmin, cmax = np.where(cols)[0][[0, -1]]
+    return [cmin, rmin, cmax, rmax]
+
+
+def visualize_map(image, segmentation_map,):
     segmentation_map = np.array(segmentation_map)
+
+
     color_seg = np.zeros((segmentation_map.shape[0], segmentation_map.shape[1], 3), dtype=np.uint8) # height, width, 3
+
 
     id2color = { 0: (0, 255, 255), 1: (255, 255, 0)}
 
@@ -119,7 +137,7 @@ def visualize_map(image, segmentation_map):
     color_seg = transform(image = color_seg)["image"]
     
     # Show image + mask
-    img = np.array(image) * 0.2 + color_seg * 0.8
+    img = np.array(image) * 0.5 + color_seg * 0.5
     img = img.astype(np.uint8)
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
@@ -148,13 +166,22 @@ class SegmentationDataset(TorchDataset):
     original_segmentation_map = np.array(item["mask"])
 
 
-    # apply albumentations -- soutpuit is ndarray
-    # what does albumentations do to the images and masks? could I just use torch vision?
+    
+    classes = np.unique(original_segmentation_map)[1:]  # Exclude background class (assumed to be 0)
+    bboxes = []
+    class_labels = []
 
-    # the error occurs here
+    for class_id in classes:
+        class_mask = (original_segmentation_map == class_id).astype(np.uint8)
+        bbox = get_bounding_box(class_mask)
+        bboxes.append(bbox)
+        class_labels.append(f'class_{class_id}')
 
-    # does this image also accept batch processing of multipel images?
-    transformed = self.transform(image=original_image, mask=original_segmentation_map)
+
+
+
+    # does this image also accept batch processing of multipel images? - from last time
+    transformed = self.transform(image=original_image, mask=original_segmentation_map, bboxes = bboxes, class_labels = class_labels)
     # convert ndarray to torch tensor
     image, target = torch.tensor(transformed['image']), torch.LongTensor(transformed['mask'])
 

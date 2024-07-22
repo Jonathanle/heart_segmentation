@@ -56,7 +56,7 @@ class Dinov2ForSemanticSegmentation(Dinov2PreTrainedModel):
       # as we don't want the model to learn to predict background
       # use cross entropy as the loss objective
 
-      loss_function = torch.nn.CrossEntropyLoss(ignore_index=255)
+      loss_function = torch.nn.CrossEntropyLoss(ignore_index=255) #the mask outputs classes of either 0 or 1. 
 
       # This fucntion could be removing more than necessary?
       loss = loss_function(logits.squeeze(), labels.squeeze())
